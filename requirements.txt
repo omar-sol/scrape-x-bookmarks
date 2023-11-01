@@ -1,0 +1,4 @@
+ipykernel
+playwright
+pytest-playwright
+python-dotenv
