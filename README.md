@@ -5,11 +5,13 @@ This project scrapes your x.com bookmarks and saves them in a .json file
 ## Installation
 
 Create a new Python environment
+
 ```bash
 python -m venv env
 ```
 
 Activate the environment
+
 ```bash
 source env/bin/activate
 ```
@@ -22,7 +24,9 @@ playwright install
 ```
 
 ## Usage
+
 Create an .env file with you auth cookie inside
+
 ```bash
 COOKIE_STRING="...
 ```
