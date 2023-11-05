@@ -13,7 +13,9 @@ BOOKMARKS_URL = "https://twitter.com/i/bookmarks"
 EMPTY_SCROLL_LIMIT = 3
 
 
-async def load_or_initialize_json(filepath, default={}):
+async def load_or_initialize_json(filepath, default=None):
+    if default is None:
+        default = []
     if os.path.exists(filepath):
         with open(filepath, "r") as f:
             return json.load(f)
@@ -44,8 +46,9 @@ async def setup_page(browser, cookie_string):
 async def scrape_tweet_content(page, tweet_contents):
     await asyncio.sleep(random.uniform(2, 5))
 
-    for link, value in tweet_contents.items():
-        if value["content"] is not None and value["time"] is not None:
+    for tweet in tweet_contents:
+        link = tweet["link"]
+        if tweet["content"] is not None and tweet["time"] is not None:
             print(f"Already scraped: {link}")
             continue
 
@@ -116,10 +119,12 @@ async def scrape_tweet_content(page, tweet_contents):
                 time_content = None
                 datetime_value = None
 
-            tweet_contents[link] = {
-                "content": tweet_content_combined,
-                "time": datetime_value if time_element else None,
-            }
+            tweet.update(
+                {
+                    "content": tweet_content_combined,
+                    "time": datetime_value if time_element else None,
+                }
+            )
             await save_json(SCRAPED_CONTENTS_FILE, tweet_contents)
 
         except Exception as e:
@@ -164,8 +169,10 @@ async def scrape_bookmarks_urls(page, main_tweet_links):
                 }""",
             )
             # Filter out only the main tweet URLs
-            new_links: list[str] = [
-                link for link in tweet_links if link not in main_tweet_links
+            new_links = [
+                link
+                for link in tweet_links
+                if link not in [tweet["link"] for tweet in main_tweet_links]
             ]
 
             # Scroll down to get more tweets
@@ -189,10 +196,13 @@ async def scrape_bookmarks_urls(page, main_tweet_links):
             print("Total links:", len(main_tweet_links))
 
             for link in new_links:
-                main_tweet_links[link] = {
-                    "content": None,
-                    "time": None,
-                }
+                main_tweet_links.append(
+                    {
+                        "link": link,
+                        "content": None,
+                        "time": None,
+                    }
+                )
             await save_json(SCRAPED_CONTENTS_FILE, main_tweet_links)
 
             # Check if scroll position has changed

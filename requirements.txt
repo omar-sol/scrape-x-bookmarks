@@ -2,3 +2,6 @@ ipykernel
 playwright
 pytest-playwright
 python-dotenv
+cohere
+numpy
+gradio
