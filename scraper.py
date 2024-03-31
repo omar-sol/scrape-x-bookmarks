@@ -2,6 +2,7 @@ import asyncio
 import random
 import json
 import os
+from tqdm import tqdm
 
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
@@ -10,7 +11,7 @@ load_dotenv()
 
 SCRAPED_CONTENTS_FILE = "scraped_contents.json"
 BOOKMARKS_URL = "https://twitter.com/i/bookmarks"
-EMPTY_SCROLL_LIMIT = 3
+EMPTY_SCROLL_LIMIT = 3  # Number of consecutive empty scrolls before ending the loop
 
 
 async def load_or_initialize_json(filepath, default=None):
@@ -43,11 +44,12 @@ async def setup_page(browser, cookie_string):
     return page
 
 
-async def scrape_tweet_content(page, tweet_contents):
+async def scrape_post_content(page, tweet_contents):
     await asyncio.sleep(random.uniform(2, 5))
 
-    for tweet in tweet_contents:
+    for tweet in tqdm(tweet_contents, desc="Scraping Posts"):
         link = tweet["link"]
+
         if tweet["content"] is not None and tweet["time"] is not None:
             print(f"Already scraped: {link}")
             continue
@@ -158,7 +160,7 @@ async def scrape_bookmarks_urls(page, main_tweet_links):
         last_scroll_position = -1
         current_scroll_position = 0
 
-        while True:  # Keep scrolling until you reach the end
+        while True:  # Keep scrolling until 3 consecutive empty scrolls
             tweet_links = await page.eval_on_selector_all(
                 "article",
                 """(articles) => {
@@ -229,7 +231,7 @@ async def main_async() -> None:
 
         main_tweet_links = await load_or_initialize_json(SCRAPED_CONTENTS_FILE)
         await scrape_bookmarks_urls(page, main_tweet_links)
-        await scrape_tweet_content(page, main_tweet_links)
+        await scrape_post_content(page, main_tweet_links)
 
         await browser.close()
         print("Done")
